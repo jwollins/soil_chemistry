@@ -17,8 +17,9 @@ suppressPackageStartupMessages({
   if (!require(readr)) install.packages("readr")
   if (!require(plotrix)) install.packages("plotrix")
   if (!require(lmerTest)) install.packages("lmerTest")
-  if (!require(lmerTest)) install.packages("emmeans")
-  if (!require(lmerTest)) install.packages("broom")
+  if (!require(emmeans)) install.packages("emmeans")
+  if (!require(broom)) install.packages("broom")
+  if (!require(stringr)) install.packages("stringr")
   
   library(dplyr) # for "glimpse" and data manipulation
   library(ggplot2) # general plotting
@@ -30,6 +31,5 @@ suppressPackageStartupMessages({
   library(lmerTest) # linear mixed effect models
   library(emmeans) # pairwise comps
   library(broom) # tidy data 
+  library(stringr)
 })
-
-

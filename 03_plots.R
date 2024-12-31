@@ -7,16 +7,19 @@
 
 
 ## 03.1 PACKAGES ####
+setwd(dir = "~/Documents/GitHub/soil_chemistry/")
 
-source(file = "scripts/01_packages.R")
-
-
-## 03.2 DATA ####
-
-source(file = "scripts/02_data.R")
+# source(file = "01_packages.R")
+# 
+# 
+# ## 03.2 DATA ####
+# 
+# source(file = "02_data.R")
 
 
 ## 03.3 PLOTS ####
+
+setwd(dir = "~/OneDrive - Harper Adams University/Data/Soil/soil_chemistry/")
     
     
 ### P ####
@@ -454,7 +457,7 @@ ggarrange(p,k,mg,ph,soc,n,bd,
     ggsave(filename = "fig_soil_lab.png", 
            path = "plots/", 
            width = 10, 
-           height = 15)
+           height = 10)
     
     
     ggarrange(p,k,mg,ph,soc,n,bd, 

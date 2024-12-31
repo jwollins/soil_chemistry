@@ -5,13 +5,17 @@
 
 ## 02 DATA ####
 
+setwd(dir = "~/Documents/GitHub/soil_chemistry/")
 
 ## 02.1 load packages ####
 
-source(file = "scripts/01_packages.R")
+source(file = "01_packages.R")
+
 
 
 ## 02.2 load data ####
+
+setwd(dir = "~/OneDrive - Harper Adams University/Data/Soil/soil_chemistry/")
 
 ## NRM data from Y2 and Y3 ####
 
@@ -36,9 +40,7 @@ for (i in file_list) {
 
 glimpse(y2y3_dat)
 
-# Load the required package
-library(dplyr)
-library(stringr)
+
 
 # Extract 'Year' and 'Sample_number' from the "Sample.1" column
 y2y3_dat <- y2y3_dat %>%
