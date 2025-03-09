@@ -2,144 +2,429 @@
 ## Joe Collins 
 ## 2024-10-05
 
-## 04 STATS ####
-
-source(file = "scripts/02_data.R")
-
-source(file = "scripts/functions/shapiro_wilks.R")
-source(file = "scripts/functions/fun_bartlett_test.R")
-source(file = "scripts/functions/fun_glm_by_year.R")
+#_________________________________________________####
+# STATS ####
+#_________________________________________________####
 
 
+#_________________________________________________####
+# Data ####
 
-dat <- read_excel(path = "data/processed/soil_data.xlsx")
+dat <- read_excel(path = "sym_link_soil_chemistry/data/processed/soil_data.xlsx")
 
-### 01  Normality ####
 
-### 01 SHAPIRO WILK ####
+dat$Year <- as.factor(dat$Year)
+dat$Treatment <- as.factor(dat$Treatment)
+dat$Block <- as.factor(dat$Block)
 
-# Load the data
-data <- dat
 
-# Specify the columns of interest (columns 7 to 55 in this case)
-columns_of_interest <- names(data)[7:ncol(data)]
+dat$Treatment <- factor(dat$Treatment, 
+                        levels = c("Baseline","Conventional", "Conservation"))
 
-dir.create(path = "stats/normality/")
 
-# Initialize an empty data frame to store results
-result_df <- data.frame()
+#_________________________________________________####
+# Functions  ####
 
-check_normality(data = data, columns_of_interest = columns_of_interest)
 
-write.csv(x = result_df, file = "stats/normality/shap_wilks_by_year.csv", 
-          row.names = FALSE)
+source(file = "~/Documents/GitHub/phd_tools/fun_distribution_plots.R")
+source(file = "~/Documents/GitHub/phd_tools/fun_glm_diagnostic_plots.R")
 
 
 
-## 02 BARTLETT TEST ####
-
-# Load the data
-data <- dat
-
-# Specify the columns of interest (columns 7 to 55 in this case)
-columns_of_interest <- names(data)[7:ncol(data)]
-
-dir.create(path = "stats/normality/")
-
-# Initialize an empty data frame to store results
-result_df <- data.frame()
-
-check_variance_homogeneity(data = data, columns_of_interest = columns_of_interest)
-
-write.csv(x = bartlett_result_df, file = "stats/normality/bartlett_test_by_year.csv", 
-          row.names = FALSE)
+#_________________________________________________####
+# Variables  ####
 
 
+# ~ P ####
+
+names(dat)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    mean = mean(Phosphorus_mg_l, na.rm = TRUE),
+    sd = sd(Phosphorus_mg_l, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = dat, 
+                   variable = dat$Phosphorus_mg_l, 
+                   colour = dat$Phosphorus_mg_l)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_Phosphorus_mg_l.png", width = 10, height = 2.25)
+
+# Find the smallest nonzero value in the dataset
+small_const <- min(dat$Phosphorus_mg_l[dat$Phosphorus_mg_l > 0]) * 0.01  # 1% of the smallest value
+
+# Add this small constant to avoid zeros
+dat$Phosphorus_mg_l_adj <- dat$Phosphorus_mg_l + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(Phosphorus_mg_l_adj ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = dat, 
+                   family = Gamma(link = "log"))
 
 
-
-
-### 03 glm ###
-
-# Specify the columns of interest (columns 7 to 55 in this case)
-columns_of_interest <- names(dat)[7:11]
-
-run_glm_and_pairwise(data = dat, columns_to_run_glm = columns_of_interest)
-
-
-
-
-
-
-
-
-### bulk density ####
-
-
-# Define the linear mixed-effects model formula
-lm_formula <- `Bulk Density_g_cm3` ~ Treatment * Year + (1 | Block)
-
-# Fit the linear mixed-effects model
-lm <- lmer(formula = lm_formula, data = dat)
-
-# Get the summary which includes p-values
-summary(lm)
-
-# You can also use anova to get Type III sums of squares and p-values
-anova(lm)
-
-# Calculate EMMs for Treatment
-emm_results <- emmeans(lm, ~ Treatment | Year)
-
-# Pairwise comparisons
-pairwise_results <- pairs(emm_results)
-summary(pairwise_results)
-
-# Pairwise comparisons with Tukey adjustment
-pairwise_results_tukey <- pairs(emm_results, adjust = "tukey")
-summary(pairwise_results_tukey)
-
-# Create directory for saving outputs
-dir.create(path = "stats/lm_outputs")
-
-# Capture the output of summary(lm_model) along with the formula
-lm_output <- capture.output(
-  cat("Linear Mixed-Effects Model Formula: ", deparse(lm_formula), "\n\n"),
-  summary(lm)
-)
-
-# Write the output to a text file
-writeLines(lm_output, "stats/lm_outputs/bulk_density.txt")
-
-# Capture pairwise comparison results
-p_comp <- capture.output(pairwise_results_tukey)
-
-# Write the output to a text file
-writeLines(p_comp, "stats/lm_outputs/bulk_density_p_comp.txt")
-
-
-
-
-
-
-## P ###
-
-# Run the GLM model (assuming a quasipoisson family)
-glm_model <- glm(Phosphorus_mg_l ~ Treatment * Year, data = dat, family = quasipoisson)
-
+# View summary
 summary(glm_model)
 
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
 
-# Perform pairwise comparisons using emmeans
-emmeans_res <- emmeans(glm_model, pairwise ~ Treatment | Year)
-
-summary(emmeans_res)
-
-pairwise_summary <- as.data.frame(summary(emmeans_res$contrasts)) # Get pairwise comparisons summary
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
 
 
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_Phosphorus_mg_l.png", 
+       width = 10, height = 3.5)
 
 
+
+
+# ~ K ####
+
+names(dat)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    mean = mean(Potassium_mg_l, na.rm = TRUE),
+    sd = sd(Potassium_mg_l, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = dat, 
+                   variable = dat$Potassium_mg_l, 
+                   colour = dat$Potassium_mg_l)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_Potassium_mg_l.png", width = 10, height = 2.25)
+
+# # Find the smallest nonzero value in the dataset
+# small_const <- min(dat$Potassium_mg_l[dat$Potassium_mg_l > 0]) * 0.01  # 1% of the smallest value
+# 
+# # Add this small constant to avoid zeros
+# dat$Potassium_mg_l_adj <- dat$Potassium_mg_l + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(Potassium_mg_l ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = dat, 
+                   family = Gamma(link = "log"))
+
+
+# View summary
+summary(glm_model)
+
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
+
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
+
+
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_Potassium_mg_l.png", 
+       width = 10, height = 3.5)
+
+
+
+
+# ~ Mg ####
+
+names(dat)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    mean = mean(Magnesium_mg_l, na.rm = TRUE),
+    sd = sd(Magnesium_mg_l, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = dat, 
+                   variable = dat$Magnesium_mg_l, 
+                   colour = dat$Magnesium_mg_l)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_Magnesium_mg_l.png", width = 10, height = 2.25)
+
+# # Find the smallest nonzero value in the dataset
+# small_const <- min(dat$Magnesium_mg_l[dat$Magnesium_mg_l > 0]) * 0.01  # 1% of the smallest value
+# 
+# # Add this small constant to avoid zeros
+# dat$Magnesium_mg_l_adj <- dat$Magnesium_mg_l + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(Magnesium_mg_l ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = dat, 
+                   family = Gamma(link = "log"))
+
+
+# View summary
+summary(glm_model)
+
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
+
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
+
+
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_Magnesium_mg_l.png", 
+       width = 10, height = 3.5)
+
+
+
+
+# ~ pH ####
+
+names(dat)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    sum = sum(pH, na.rm = TRUE),
+    sd = sd(pH, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = dat, 
+                   variable = dat$pH, 
+                   colour = dat$pH)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_pH.png", width = 10, height = 2.25)
+
+# # Find the smallest nonzero value in the dataset
+# small_const <- min(dat$Magnesium_mg_l[dat$Magnesium_mg_l > 0]) * 0.01  # 1% of the smallest value
+# 
+# # Add this small constant to avoid zeros
+# dat$Magnesium_mg_l_adj <- dat$Magnesium_mg_l + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(pH ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = dat, 
+                   family = Gamma(link = "log"))
+
+
+# View summary
+summary(glm_model)
+
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
+
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
+
+
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_pH.png", 
+       width = 10, height = 3.5)
+
+
+
+
+
+# ~ BD ####
+
+names(dat)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    mean = mean(Bulk_density, na.rm = TRUE),
+    sd = sd(Bulk_density, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = dat, 
+                   variable = dat$Bulk_density, 
+                   colour = dat$Bulk_density)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_Bulk_density.png", width = 10, height = 2.25)
+
+# # Find the smallest nonzero value in the dataset
+# small_const <- min(dat$Magnesium_mg_l[dat$Magnesium_mg_l > 0]) * 0.01  # 1% of the smallest value
+# 
+# # Add this small constant to avoid zeros
+# dat$Magnesium_mg_l_adj <- dat$Magnesium_mg_l + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(Bulk_density ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = dat, 
+                   family = Gamma(link = "log"))
+
+
+# View summary
+summary(glm_model)
+
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
+
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
+
+
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_Bulk_density.png", 
+       width = 10, height = 3.5)
+
+
+
+
+
+
+
+# ~ SOC ####
+
+names(dat)
+
+r_dat <- filter(.data = dat, dat$Year != 2024)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  filter(dat$Year != 2024) %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    mean = mean(SOC_percent, na.rm = TRUE),
+    sd = sd(SOC_percent, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = r_dat, 
+                   variable = r_dat$SOC_percent, 
+                   colour = r_dat$SOC_percent)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_SOC_percent.png", width = 10, height = 2.25)
+
+# Find the smallest nonzero value in the dataset
+small_const <- min(r_dat$SOC_percent[r_dat$SOC_percent > 0]) * 0.01  # 1% of the smallest value
+
+# Add this small constant to avoid zeros
+r_dat$SOC_percent_adj <- r_dat$SOC_percent + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(SOC_percent_adj ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = r_dat, 
+                   family = Gamma(link = "log"))
+
+
+# View summary
+summary(glm_model)
+
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
+
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
+
+
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_SOC_percent.png", 
+       width = 10, height = 3.5)
+
+
+
+# ~ N ####
+
+names(dat)
+
+r_dat <- filter(.data = dat, dat$Year != 2024)
+
+# Calculates mean, sd, se and IC - block
+summ <- 
+  dat %>%
+  filter(dat$Year != 2024) %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n = n(),
+    mean = mean(N_percent, na.rm = TRUE),
+    sd = sd(N_percent, na.rm = TRUE)
+  ) %>%
+  mutate( se = sd/sqrt(n))  %>%
+  mutate( ic = se * qt((1-0.05)/2 + .5, n-1)) %>% 
+  arrange(Year)
+
+summ
+
+distribution_plots(data = r_dat, 
+                   variable = r_dat$N_percent, 
+                   colour = r_dat$N_percent)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/distributions/dist_N_percent.png", width = 10, height = 2.25)
+
+# # Find the smallest nonzero value in the dataset
+# small_const <- min(r_dat$N_percent[r_dat$N_percent > 0]) * 0.01  # 1% of the smallest value
+# 
+# # Add this small constant to avoid zeros
+# r_dat$N_percent_adj <- r_dat$N_percent + small_const
+
+# Fit the GLMM model
+glm_model <- glmer(N_percent ~ Treatment + (1 | Year) + (1 | Block), 
+                   data = r_dat, 
+                   family = Gamma(link = "log"))
+
+
+# View summary
+summary(glm_model)
+
+# Run pairwise comparisons for the 'Treatment' factor
+pairwise_comparisons <- emmeans(glm_model, pairwise ~ Treatment)
+
+# View the results of pairwise comparisons
+summary(pairwise_comparisons)
+
+
+diagnostic_plots_glm(model = glm_model)
+
+ggsave(filename = "sym_link_soil_chemistry/plots/model_diagnostics/diag_N_percent.png", 
+       width = 10, height = 3.5)
 
 
 

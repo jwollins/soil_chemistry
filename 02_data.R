@@ -5,7 +5,9 @@
 
 ## 02 DATA ####
 
-setwd(dir = "~/Documents/GitHub/soil_chemistry/")
+setwd(rstudioapi::getActiveProject())
+
+getwd()
 
 ## 02.1 load packages ####
 
@@ -15,12 +17,12 @@ source(file = "01_packages.R")
 
 ## 02.2 load data ####
 
-setwd(dir = "~/OneDrive - Harper Adams University/Data/Soil/soil_chemistry/")
+# setwd(dir = "~/OneDrive - Harper Adams University/Data/Soil/soil_chemistry/")
 
 ## NRM data from Y2 and Y3 ####
 
 # Specify the folder path
-folder_path <- "data/NRM_txt/"
+folder_path <- "sym_link_soil_chemistry/data/NRM_txt/"
 
 # List files (ensure the paths are correct)
 file_list <- list.files(folder_path, pattern = "\\.TXT$", full.names = TRUE)
@@ -60,14 +62,14 @@ y2y3_dat <- y2y3_dat %>%
 y2_dat <- filter(.data = y2y3_dat, Year == "2")
 y3_dat <- filter(.data = y2y3_dat, Year == "3")
 
-write.csv(x = y2_dat, file = "data/processed/y2_nrm_processed.csv")
-write.csv(x = y3_dat, file = "data/processed/y3_nrm_processed.csv")
+write.csv(x = y2_dat, file = "sym_link_soil_chemistry/data/processed/y2_nrm_processed.csv")
+write.csv(x = y3_dat, file = "sym_link_soil_chemistry/data/processed/y3_nrm_processed.csv")
 
 
 
 ### Full data set ####
 
-dat <- read_excel(path = "data/processed/soil_data.xlsx")
+dat <- read_excel(path = "sym_link_soil_chemistry/data/processed/soil_data.xlsx")
 
 
 ## 02.3 factors ####

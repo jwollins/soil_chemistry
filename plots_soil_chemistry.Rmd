@@ -1,0 +1,776 @@
+---
+title: "plots_soil_chemistry"
+author: "Joe Collins"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = rstudioapi::getActiveProject())
+
+# PACKAGES ####
+
+library(dplyr)
+library(purrr) # For list filtering
+library(stringr) # replace characters
+library(ggplot2) # plotting 
+library(tidyr)
+library(ggpubr)
+library(readxl)
+```
+
+
+
+```{r data}
+
+dat <- read_excel(path = "sym_link_soil_chemistry/data/processed/soil_data.xlsx")
+
+dat$Year <- as.factor(dat$Year)
+dat$Treatment <- as.factor(dat$Treatment)
+dat$Block <- as.factor(dat$Block)
+
+
+dat$Treatment <- factor(dat$Treatment, 
+                           levels = c("Baseline", "Conservation","Conventional"))
+
+
+```
+
+
+#_________________________________________________
+# Plots 
+
+
+## ~ P
+```{r P}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Phosphorus_mg_l),
+    sd = sd(Phosphorus_mg_l)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ p1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,25) +
+      labs(
+        x = element_blank(),
+        y = expression(Phosphorus~(Mg~l^{-1})),
+        subtitle = expression(Phosphorus~(Mg~l^{-1})), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ 
+ 
+ summ <- dat %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Phosphorus_mg_l),
+    sd = sd(Phosphorus_mg_l)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ p2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,25) +
+      labs(
+        x = element_blank(),
+        y = expression(Phosphorus~(Mg~l^{-1})),
+        subtitle = expression(Phosphorus~(Mg~l^{-1})), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(p1,p2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/P_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+
+
+
+## ~ K
+```{r P}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Potassium_mg_l),
+    sd = sd(Potassium_mg_l)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ k1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,200) +
+      labs(
+        x = element_blank(),
+        y = expression(Potassium~(Mg~l^{-1})),
+        subtitle = expression(Potassium~(Mg~l^{-1})), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ 
+ 
+ summ <- dat %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Potassium_mg_l),
+    sd = sd(Potassium_mg_l)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ k2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,200) +
+      labs(
+        x = element_blank(),
+        y = expression(Potassium~(Mg~l^{-1})),
+        subtitle = expression(Potassium~(Mg~l^{-1})), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(k1,k2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/K_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+
+## ~ Mg
+```{r P}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Magnesium_mg_l),
+    sd = sd(Magnesium_mg_l)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ mg1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,90) +
+      labs(
+        x = element_blank(),
+        y = expression(Magnesium~(Mg~l^{-1})),
+        subtitle = expression(Magnesium~(Mg~l^{-1})), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ 
+ 
+ summ <- dat %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Magnesium_mg_l),
+    sd = sd(Magnesium_mg_l)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ mg2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,90) +
+      labs(
+        x = element_blank(),
+        y = expression(Magnesium~(Mg~l^{-1})),
+        subtitle = expression(Magnesium~(Mg~l^{-1})), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(mg1,mg2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/Mg_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+
+## ~ N
+```{r N}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(N_percent),
+    sd = sd(N_percent)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ n1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,0.2) +
+      labs(
+        x = element_blank(),
+        y = expression(Nitrogen~(N~"%")), 
+        subtitle = expression(Nitrogen~(N~"%")), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ n1
+ 
+ summ <- dat %>% filter(dat$Year != 2024) %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(N_percent),
+    sd = sd(N_percent)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ n2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,0.2) +
+      labs(
+        x = element_blank(),
+        y = expression(Nitrogen~(N~"%")), 
+        subtitle = expression(Nitrogen~(N~"%")), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(n1,n2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/N_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+
+
+
+
+## ~ pH
+```{r pH}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(pH),
+    sd = sd(pH)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ ph1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,7) +
+      labs(
+        x = element_blank(),
+        y = expression(pH), 
+        subtitle = expression(pH), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ 
+ summ <- dat %>% 
+   # filter(dat$Year != 2024) %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(pH),
+    sd = sd(pH)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ ph2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,7) +
+      labs(
+        x = element_blank(),
+        y = expression(pH), 
+        subtitle = expression(pH), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(ph1,ph2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/pH_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+## ~ C
+```{r C}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(SOC_percent),
+    sd = sd(SOC_percent)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ soc1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,2) +
+      labs(
+        x = element_blank(),
+        y = expression(Total~Carbon~(C~"%")), 
+        subtitle = expression(Total~Carbon~(C~"%")), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ 
+ summ <- dat %>% 
+   filter(dat$Year != 2024) %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(SOC_percent),
+    sd = sd(SOC_percent)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ soc2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,2) +
+      labs(
+        x = element_blank(),
+        y = expression(Total~Carbon~(C~"%")), 
+        subtitle = expression(Total~Carbon~(C~"%")), 
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(soc1,soc2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/SOC_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+
+## ~ BD
+```{r BD}
+# Calculates mean, sd, se and IC - block
+summ <- dat %>%
+  group_by(Treatment, Year) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Bulk_density),
+    sd = sd(Bulk_density)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+
+    
+ bd1 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+   ylim(0,1.6) +
+      labs(
+        x = element_blank(),
+        y = expression(Bulk~Density~(g~cm^{-3})),
+        subtitle = expression(Bulk~Density~(g~cm^{-3})),
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white","turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~ Year, 
+                 ncol = 4, 
+                 scales = 'free_x') 
+ 
+ 
+ summ <- dat %>% 
+   filter(dat$Year != 2024) %>%
+  group_by(Treatment) %>%
+  summarise( 
+    n=n(),
+    mean = mean(Bulk_density),
+    sd = sd(Bulk_density)
+  ) %>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ic=se * qt((1-0.05)/2 + .5, n-1))
+ 
+ summ$Year <- "All Years"  # Dummy variable for faceting
+
+ 
+ bd2 <-   ggplot(data = summ, 
+           aes(x = Treatment, 
+               y = mean, 
+               fill = Treatment)) + 
+      geom_bar(stat = "identity", 
+               color = "black", 
+               position = "dodge") + 
+      ylim(0,1.6) +
+      labs(
+        x = element_blank(),
+        y = expression(Bulk~Density~(g~cm^{-3})),
+        subtitle = expression(Bulk~Density~(g~cm^{-3})),
+        caption = "") +
+      theme_bw() +
+      scale_fill_manual(values=c("white", "turquoise3","tomato2"), 
+                        name = "Treatment") +
+      theme(strip.text.x = element_text(size = 12, 
+                                        color = "black", 
+                                        face = "bold.italic"), 
+            legend.position = "bottom", 
+            axis.text.x = element_blank()) +
+      geom_errorbar(aes(ymin = mean - se, 
+                        ymax = mean + se),
+                    width=.2,                    # Width of the error bars
+                    position=position_dodge(.9)) +
+      facet_wrap(~Year, ncol = 4)  # Ensure it matches `p1`
+ 
+ggarrange(bd1,bd2,
+          ncol = 2, nrow = 1,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/BD_joint_plot.png",
+       width = 10, height = 3.5)
+
+
+```
+
+
+
+
+
+```{r}
+
+ggarrange(p1,p2,k1,k2,mg1,mg2,ph1,ph2,n1,n2,
+          ncol = 2, nrow = 5,  
+          common.legend = TRUE,  # Use a common legend
+          legend = "bottom", 
+          labels = c("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"),
+          widths = c(2, 1))  # Make first column twice as wide
+
+ggsave(filename = "sym_link_soil_chemistry/plots/joint_plots/fig_soil_chem_joint.png",
+       width = 10, height = 13)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
